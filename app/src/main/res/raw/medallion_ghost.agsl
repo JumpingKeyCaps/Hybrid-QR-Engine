@@ -1,0 +1,50 @@
+// Uniforms de contrôle dynamique
+uniform float uDataBrightness;
+uniform float uBgBrightness;
+uniform float uDataAlpha;
+uniform float uBgAlpha;
+uniform float uShapeSoftness;
+uniform float uContrastBoost;
+
+// Uniforms de structure
+uniform float uModuleSize;
+uniform float2 uOffset;
+uniform float uRadius;
+uniform shader uQrMatrix;
+uniform float uInvert;
+
+half4 main(float2 fragCoord) {
+    float d = distance(fragCoord, uOffset);
+
+    if (d > uRadius) {
+        return half4(0.0, 0.0, 0.0, 0.0);
+    }
+
+    float qrSize = uModuleSize * 21.0;
+    float2 qrTopLeft = uOffset - (qrSize / 2.0);
+    float2 localCoord = fragCoord - qrTopLeft;
+    float2 moduleCoord = floor(localCoord / uModuleSize);
+
+    // Valeurs par défaut (Fond)
+    float intensity = uBgBrightness;
+    float alpha = uBgAlpha;
+
+    if (moduleCoord.x >= 0.0 && moduleCoord.x < 21.0 &&
+        moduleCoord.y >= 0.0 && moduleCoord.y < 21.0) {
+
+        float2 moduleUV = (moduleCoord + 0.5) / 21.0;
+        half4 qrSample = uQrMatrix.eval(moduleUV * 21.0);
+
+        float isData = abs((1.0 - qrSample.r) - uInvert);
+
+        // Transition calculée via les nouveaux uniforms
+        float edgeMin = 0.5 - uShapeSoftness;
+        float edgeMax = 0.5 + uShapeSoftness;
+        float factor = smoothstep(edgeMin, edgeMax, isData * uContrastBoost);
+
+        intensity = mix(uBgBrightness, uDataBrightness, factor);
+        alpha = mix(uBgAlpha, uDataAlpha, factor);
+    }
+
+    return half4(intensity, intensity, intensity, alpha);
+}
