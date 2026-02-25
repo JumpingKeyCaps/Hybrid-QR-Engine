@@ -1,0 +1,27 @@
+uniform float uModuleSize;
+uniform float2 uOffset;
+uniform shader uQrMatrix;
+uniform float uInvert;
+// Nouveaux contrôles de couleur
+uniform half4 uDataColor;
+uniform half4 uBgColor;
+
+half4 main(float2 fragCoord) {
+    float2 qrFrameCoord = fragCoord - uOffset;
+    float2 moduleCoord = floor(qrFrameCoord / uModuleSize);
+
+    // Hors bornes
+    if (moduleCoord.x < 0.0 || moduleCoord.x >= 21.0 ||
+        moduleCoord.y < 0.0 || moduleCoord.y >= 21.0) {
+        return uBgColor;
+    }
+
+    float2 moduleUV = (moduleCoord + 0.5) / 21.0;
+    half4 qrSample = uQrMatrix.eval(moduleUV * 21.0);
+
+    float isBlack = 1.0 - qrSample.r;
+    float isData = abs(isBlack - uInvert);
+
+    // Mixage fluide entre la couleur de fond et la couleur de donnée
+    return mix(uBgColor, uDataColor, isData > 0.5 ? 0.9 : 0.0);
+}
