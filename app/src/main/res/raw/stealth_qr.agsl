@@ -1,0 +1,39 @@
+// --- RÉGLAGES MANUELS ---
+const float DATA_INTENSITY = 1.0;
+const float DATA_ALPHA = 1.0;
+const float BG_INTENSITY = 0.2;
+const float BG_ALPHA = 0.01;
+const float OUT_OF_BOUNDS_ALPHA = 0.05;
+// ------------------------
+
+uniform float uModuleSize;
+uniform float2 uOffset;
+uniform shader uQrMatrix;
+uniform float uInvert; // 0.0 = Normal, 1.0 = Inversé
+
+half4 main(float2 fragCoord) {
+    // On ramène les coordonnées dans l'espace du QR (200dp ou autre)
+    float2 qrFrameCoord = fragCoord - uOffset;
+    float2 moduleCoord = floor(qrFrameCoord / uModuleSize);
+
+    // Si on est en dehors du carré 21x21
+    if (moduleCoord.x < 0.0 || moduleCoord.x >= 21.0 ||
+        moduleCoord.y < 0.0 || moduleCoord.y >= 21.0) {
+        return half4(0.1, 0.1, 0.1, OUT_OF_BOUNDS_ALPHA);
+    }
+
+    // On échantillonne la texture QR (Bitmap 21x21)
+    float2 moduleUV = (moduleCoord + 0.5) / 21.0;
+    half4 qrSample = uQrMatrix.eval(moduleUV * 21.0);
+
+    // Logique d'inversion : qrSample.r est 0 pour noir, 1 pour blanc
+    float isBlack = 1.0 - qrSample.r;
+
+    // Si uInvert est à 1.0, on inverse le résultat de isBlack
+    float finalDetection = abs(isBlack - uInvert);
+
+    float finalAlpha = (finalDetection > 0.5) ? DATA_ALPHA : BG_ALPHA;
+    float finalColor = (finalDetection > 0.5) ? DATA_INTENSITY : BG_INTENSITY;
+
+    return half4(finalColor, finalColor, finalColor, finalAlpha);
+}
