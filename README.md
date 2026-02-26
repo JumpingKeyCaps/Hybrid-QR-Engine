@@ -5,6 +5,12 @@
 
 Hybrid-QR-Engine is a specialized graphics pipeline for Android that renders QR matrices through a dynamic particle system. By shifting from static blocks to a GPU-driven density map, it creates a "Stealth" visual effect where data is hidden within motion.
 
+--
+
+| Simple logical demo  | Upgraded version demo | Full configurable version | Alt FullConfig version |
+|:---:|:---:|:---:|:---:|
+| ![P1](screenshots/demo1.gif) | ![P2](screenshots/demo2.gif) | ![P3](screenshots/demo3.gif) | ![P4](screenshots/demo4.gif) |
+
 ---
 
 ## The Stealth Engine Concept
