@@ -16,9 +16,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             HybridQrEngineTheme {
-               // StealthScreen()
+             //   StealthScreen()
                 KineticGhostScreen()
-              //  GhostMedallionScreen()
+            //    GhostMedallionScreen()
             }
         }
     }
