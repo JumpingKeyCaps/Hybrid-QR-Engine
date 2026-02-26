@@ -1,71 +1,147 @@
-# Hybrid-QR-Engine : AGSL Dynamic Particle Rendering
+# Hybrid QR Engine  
+### Hybrid CPU/GPU Kinetic Rendering for Structured Data
 
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-blue)
-![AGSL](https://img.shields.io/badge/Android_API-33+-green)
+![Android](https://img.shields.io/badge/Android-API_33+-green)
+![AGSL](https://img.shields.io/badge/Graphics-AGSL_RuntimeShader-orange)
 
-Hybrid-QR-Engine is a specialized graphics pipeline for Android that renders QR matrices through a dynamic particle system. By shifting from static blocks to a GPU-driven density map, it creates a "Stealth" visual effect where data is hidden within motion.
+Hybrid QR Engine is an experimental rendering system for Android that reinterprets QR matrices through a hybrid CPU/GPU graphics pipeline.
 
---
+Instead of statically drawing square modules, the engine transforms QR data into a dynamic particle field constrained by spatial logic and GPU masking.
 
-| Simple logical demo  | Upgraded version demo | Full configurable version | Alt FullConfig version |
-|:---:|:---:|:---:|:---:|
+This project explores motion-based structural rendering while preserving strict matrix topology.
+
+---
+
+| Logical Prototype | Progressive Upgrade | Full Configuration | Alternate Config |
+|:--:|:--:|:--:|:--:|
 | ![P1](screenshots/demo1.gif) | ![P2](screenshots/demo2.gif) | ![P3](screenshots/demo3.gif) | ![P4](screenshots/demo4.gif) |
 
 ---
 
-## The Stealth Engine Concept
 
-The engine interprets the QR bit-matrix as a **Probability Density Map** rather than a static grid of pixels.
+## Architectural Overview
 
-### Organic Dithering via AGSL
-* **High Density (Data)**: The shader generates a concentrated flow of particles in "Black" modules. Opacity is maintained to ensure sensor detection.
-* **Low Density (Background)**: Particles are scattered, blurred, or removed in "White" modules, creating an organic "cloud" effect.
-* **The Machine Link**: While the human eye perceives a fluid, moving shape, a smartphone camera captures a frozen frame. The high-frequency clusters of particles reconstruct the necessary contrast for ML Kit / ZXing to decode the data.
+The system is divided into two explicit layers:
 
----
+### 1. CPU Kinetic Simulation
 
-## GPU Implementation: Shader Modes
+A deterministic particle engine drives motion and spatial behavior.
 
-The engine leverages three specific AGSL implementations to control the visual interpretation of the QR matrix:
+- Pre-allocated fixed-size buffers (FloatArray / IntArray)
+- No runtime memory allocation during animation
+- O(n) per-frame particle update
+- Velocity modulation based on module classification
+- Data-zone resistance ("stase" effect)
+- Bitmap-backed module sampling
 
-### 1. Binary Alpha Threshold (Shader 1)
-Direct management of intensity and transparency based on raw matrix sampling.
-* **Logic**: Threshold-based sampling (`isBlack - uInvert`) to define data vs. background.
-* **Usage**: High-contrast rendering with out-of-bounds safety, optimized for raw performance.
+Particles are not randomly distributed.  
+Their motion is constrained by QR module classification sampled in real time.
 
-### 2. Smooth Distance Masking (Shader 2)
-Uses radius-based constraints and smooth transitions for a refined, circular aesthetic.
-* **Logic**: `smoothstep` interpolation driven by `uShapeSoftness` and `uContrastBoost` within a defined `uRadius`.
-* **Usage**: Creates "soft" modules where data blocks are rounded and anti-aliased, improving visual integration while maintaining sensor contrast.
-
-### 3. Chromatic Mix & Interpolation (Shader 3)
-Advanced visual camouflage that blends the QR structure directly into the application's color space.
-* **Logic**: Color-space mixing (`mix`) between `uDataColor` and `uBgColor` based on data presence.
-* **Usage**: Dissolves the rigid QR grid into a fluid chromatic layout, where data is visible to sensors primarily through luminance differentials.
+This creates density contrast through velocity reduction rather than static opacity.
 
 ---
 
-## Technical Specifications
+### 2. GPU Structural Reconstruction (AGSL)
 
-* **Graphics API**: AGSL (Android 13+ / API 33+)
-* **UI Bridge**: Jetpack Compose `RuntimeShader`
-* **Matrix Input**: Optimized for Version 1 (21x21) through Version 4 (33x33).
-* **Optimization**: Minimal CPU-to-GPU memory copy using compact bit-buffers.
+An AGSL RuntimeShader reconstructs QR topology directly on the GPU.
 
----
+Responsibilities:
 
-## Core Uniforms Reference
+- Module coordinate reconstruction (21×21 grid)
+- Data vs background classification
+- Polarity inversion
+- Chromatic blending
+- Boundary-safe masking
 
-| Uniform | Description |
-| :--- | :--- |
-| **uModuleSize** | Controls the physical scale of the particle grid. |
-| **uInvert** | Toggles between normal and inverted data polarity (0.0 / 1.0). |
-| **uShapeSoftness** | Adjusts the blur and diffusion of the particle clusters. |
-| **uDataColor** | Defines the RGBA identity of the active data modules. |
-| **uBgColor** | Defines the RGBA identity of the background/empty modules. |
+The shader guarantees spatial coherence and preserves logical structure independently from the kinetic layer.
+
+Rendering logic and data logic remain decoupled.
 
 ---
 
-## Integration
+## Rendering Model
 
-The bridge is handled via the `OrganicQrSurface` component. It takes a pre-computed bit-matrix from the CPU and feeds it directly into the AGSL RuntimeShader. This ensures the rendering logic stays 100% on the GPU while the data structure remains strictly valid for scanning.
+The engine does not simulate noise or probabilistic dithering.
+
+Instead, it relies on:
+
+- Spatial constraint fields
+- Motion resistance inside data modules
+- Controlled particle size variance
+- Chromatic separation between structural zones
+
+The QR becomes perceptible through motion clustering rather than rigid block rendering.
+
+---
+
+## Feature Set
+
+- QR Version 1 topology (21×21)
+- Up to 15,000 concurrent particles
+- Live particle count scaling
+- Speed multiplier control
+- Data polarity inversion
+- Dual hue chromatic configuration
+- Background alpha modulation
+- Particle size min/max control
+- Inner render scaling
+- Adjustable data-zone resistance
+- Real-time matrix regeneration (mock generator)
+
+---
+
+## Performance Characteristics
+
+- Single allocation particle buffers
+- Stable frame-time under max particle load (device dependent)
+- CPU-bound motion simulation
+- GPU-bound structural masking and compositing
+- Hardware acceleration required
+- Designed for Android 13+ (AGSL dependency)
+
+---
+
+## Technical Stack
+
+- Kotlin 2.x
+- Jetpack Compose
+- Native Canvas drawing
+- AGSL RuntimeShader
+- Android API 33+
+
+---
+
+## Current Scope & Limitations
+
+- Uses internal QR mock generator (no encoder integration yet)
+- Optimized for Version 1 matrices
+- Experimental rendering engine
+- Not intended as a production QR library
+
+Scannability depends on contrast configuration and device camera processing.
+
+---
+
+## Research Intent
+
+This project investigates:
+
+- Hybrid CPU/GPU rendering separation
+- Motion-based reinterpretation of structured machine data
+- Shader-driven structural masking
+- Real-time uniform orchestration in Compose
+- Performance characteristics of high-count particle systems on Android
+
+It serves as a graphics engineering exploration rather than a utility implementation.
+
+---
+
+## Requirements
+
+- Android 13 (API 33) or higher
+- Device supporting AGSL RuntimeShader
+- Hardware acceleration enabled
+
+---
+`Built as an exploration of hybrid rendering systems on modern Android.`
